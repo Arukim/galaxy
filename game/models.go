@@ -12,6 +12,7 @@ type TurnInfo struct {
 }
 
 type PlayerTurn struct {
+	PlayerId int
 }
 
 type PlayerInfo struct {
