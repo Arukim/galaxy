@@ -5,9 +5,8 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/arukim/galaxy/game"
+	"github.com/arukim/galaxy/login"
 )
 
 var addr = flag.String("addr", ":8080", "http service address")
@@ -27,9 +26,11 @@ func main() {
 		http.ServeFile(w, r, r.URL.Path[1:])
 	})
 
+	gs := login.NewGameServer("/galaxy")
+	gs.Listen()
+
 	log.Print("server started")
-	g := game.NewGame(1, 100, 25*time.Millisecond)
-	g.Start()
+	//g := game.NewGame(1, 100, 25*time.Millisecond)
 
 	if err := http.ListenAndServe(*addr, nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
