@@ -3,7 +3,8 @@
 
 <head lang="en">
     <meta charset="UTF-8">
-    <title></title>
+    <title>Galaxy server</title>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 </head>
 
 <body>
@@ -11,6 +12,54 @@
     <h1>Hello</h1>
 
     <p>Host: {{.Host}}</p>
+
+    <div>
+        <form>
+            <label for="room">Room</label>
+            <input type="text" id="roomField" value="red room" />
+            <br />
+            <button type="button" id="sendBtn">Send</button>
+        </form>
+    </div>
+    <div id="container"></div>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            var ws;
+            if (window.WebSocket === undefined) {
+                $("#container").append("Your browser does not support WebSockets");
+                return;
+            } else {
+                ws = initWS();
+            }
+
+            function initWS() {
+                var socket = new WebSocket("ws://{{.Host}}/galaxy"),
+                    container = $("#container")
+                socket.onopen = function() {
+                    container.append("<p>Connected to server</p>");
+                    ws.send(JSON.stringify({
+                        cmd: 'rooms'
+                    }));
+                };
+                socket.onmessage = function(e) {
+                    container.append("<p>Server says: " + e.data + "</p>");
+                }
+                socket.onclose = function() {
+                    container.append("<p>Disconnected from server</p>");
+                }
+                return socket;
+            }
+            $("#sendBtn").click(function(e) {
+                e.preventDefault();
+                ws.send(JSON.stringify({
+                    cmd: 'join',
+                    data: $("#roomField").val()
+                }));
+            });
+        });
+    </script>
 
 </body>
 
