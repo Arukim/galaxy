@@ -8,16 +8,19 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+// Command is model for network commands
 type Command struct {
 	Cmd  string           `json:"cmd"`
 	Data *json.RawMessage `json:"data"`
 }
 
+// CommandHandler handles one command
 type CommandHandler struct {
 	Name    string
 	Handler func(Data *json.RawMessage) []byte
 }
 
+// Router is set of command handlers
 type Router struct {
 	handlers map[string]CommandHandler
 }
