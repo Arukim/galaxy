@@ -87,7 +87,7 @@ func (gs *GameServer) Listen() {
 	log.Printf("GameServer is started on %v\n", gs.pattern)
 
 	http.Handle(gs.pattern, websocket.Handler(func(ws *websocket.Conn) {
-		client := network.NewWebClient(ws, r)
+		client := network.NewWebClient(ws, gs.router)
 
 		gs.clientsLock.Lock()
 		defer gs.clientsLock.Unlock()
