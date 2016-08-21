@@ -2,31 +2,24 @@ package login
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
 
-	"github.com/arukim/galaxy/network"
+	"github.com/arukim/galaxy/core"
 
+	q "github.com/ahmetalpbalkan/go-linq"
 	"golang.org/x/net/websocket"
 )
-
-// Room each room runs one game
-type Room struct {
-	Name           string `json:"name"`
-	ID             int    `json:"id"`
-	PlayersPerGame int    `json:"playersPerGame"`
-}
 
 // GameServer is entry point for players
 type GameServer struct {
 	pattern string
-	rooms   []Room
-	clients []*network.WebClient
-	router  *network.Router
+	rooms   []*Room
+	players []*core.Player
 
 	clientsLock *sync.Mutex
-	roomsLock   *sync.Mutex
 }
 
 // NewGameServer creates new game server instance
@@ -35,51 +28,44 @@ func NewGameServer(pattern string) *GameServer {
 		pattern: pattern,
 	}
 
-	gs.roomsLock = &sync.Mutex{}
 	gs.clientsLock = &sync.Mutex{}
-	gs.clients = make([]*network.WebClient, 1)
+	gs.players = []*core.Player{}
 
-	gs.rooms = []Room{
-		{
-			Name:           "red room",
-			ID:             0,
-			PlayersPerGame: 1,
-		},
-		{
-			Name:           "blue room",
-			ID:             1,
-			PlayersPerGame: 2,
-		},
+	gs.rooms = []*Room{
+		NewRoom(RoomSettings{Name: "red room", PlayersPerGame: 1}),
+		NewRoom(RoomSettings{Name: "blue room", PlayersPerGame: 2}),
 	}
-
-	gs.router = network.NewRouter([]network.CommandHandler{
-		{
-			Name:    "join",
-			Handler: gs.OnJoin,
-		},
-		{
-			Name:    "rooms",
-			Handler: gs.OnRooms,
-		},
-	})
 
 	return &gs
 }
 
 // OnJoin - player is trying to enter room
-func (gs *GameServer) OnJoin(d *json.RawMessage) []byte {
+func (gs *GameServer) OnJoin(d *json.RawMessage, p *core.Player) *core.Result {
+	var resp *core.Result
+	var roomName string
+	json.Unmarshal(*d, &roomName)
 
-	resp, _ := json.Marshal("joined the room")
+	log.Printf("Request to join room %v", roomName)
+
+	r, found, err := q.From(gs.rooms).
+		FirstBy(func(i q.T) (bool, error) {
+			return i.(*Room).Name == roomName, nil
+		})
+
+	if err == nil && found {
+		room := r.(*Room)
+		room.AddPlayer(p)
+		resp = core.NewSuccessResult("joined the room " + room.Name)
+	} else {
+		resp = core.NewErrorResult(fmt.Sprintf("room %s not found", roomName))
+	}
+
 	return resp
 }
 
 // OnRooms - player is quering rooms
-func (gs *GameServer) OnRooms(d *json.RawMessage) []byte {
-	gs.roomsLock.Lock()
-	defer gs.roomsLock.Unlock()
-
-	resp, _ := json.Marshal(gs.rooms)
-	return resp
+func (gs *GameServer) OnRooms(d *json.RawMessage, p *core.Player) *core.Result {
+	return core.NewSuccessResult(gs.rooms)
 }
 
 // Listen starts the server
@@ -87,13 +73,20 @@ func (gs *GameServer) Listen() {
 	log.Printf("GameServer is started on %v\n", gs.pattern)
 
 	http.Handle(gs.pattern, websocket.Handler(func(ws *websocket.Conn) {
-		client := network.NewWebClient(ws, gs.router)
+		player := core.NewPlayer(ws, []*core.CommandHandler{
+			{
+				Name:   "join",
+				Handle: gs.OnJoin,
+			},
+			{
+				Name:   "rooms",
+				Handle: gs.OnRooms,
+			},
+		})
 
 		gs.clientsLock.Lock()
 		defer gs.clientsLock.Unlock()
 
-		gs.clients = append(gs.clients, client)
-
-		gs.router.Listen(ws)
+		gs.players = append(gs.players, player)
 	}))
 }
