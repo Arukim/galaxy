@@ -13,8 +13,8 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-// GameServer is entry point for players
-type GameServer struct {
+// Server (login) is entry point for players
+type Server struct {
 	pattern string
 	rooms   []*Room
 	players []*core.Player
@@ -22,39 +22,39 @@ type GameServer struct {
 	clientsLock *sync.Mutex
 }
 
-// NewGameServer creates new game server instance
-func NewGameServer(pattern string) *GameServer {
-	gs := GameServer{
+// NewServer creates new game server instance
+func NewServer(pattern string) *Server {
+	s := Server{
 		pattern: pattern,
 	}
 
-	gs.clientsLock = &sync.Mutex{}
-	gs.players = []*core.Player{}
+	s.clientsLock = &sync.Mutex{}
+	s.players = []*core.Player{}
 
-	gs.rooms = []*Room{
+	s.rooms = []*Room{
 		NewRoom(RoomSettings{Name: "red room", PlayersPerGame: 1}),
 		NewRoom(RoomSettings{Name: "blue room", PlayersPerGame: 2}),
 	}
 
-	return &gs
+	return &s
 }
 
 // OnJoin - player is trying to enter room
-func (gs *GameServer) OnJoin(d *json.RawMessage, p *core.Player) *core.Result {
+func (s *Server) OnJoin(d *json.RawMessage, p *core.Player) *core.Result {
 	var resp *core.Result
 	var roomName string
 	json.Unmarshal(*d, &roomName)
 
 	log.Printf("Request to join room %v", roomName)
 
-	r, found, err := q.From(gs.rooms).
+	r, found, err := q.From(s.rooms).
 		FirstBy(func(i q.T) (bool, error) {
 			return i.(*Room).Name == roomName, nil
 		})
 
 	if err == nil && found {
 		room := r.(*Room)
-		room.AddPlayer(p)
+		go room.AddPlayer(p)
 		resp = core.NewSuccessResult("joined the room " + room.Name)
 	} else {
 		resp = core.NewErrorResult(fmt.Sprintf("room %s not found", roomName))
@@ -64,29 +64,29 @@ func (gs *GameServer) OnJoin(d *json.RawMessage, p *core.Player) *core.Result {
 }
 
 // OnRooms - player is quering rooms
-func (gs *GameServer) OnRooms(d *json.RawMessage, p *core.Player) *core.Result {
-	return core.NewSuccessResult(gs.rooms)
+func (s *Server) OnRooms(d *json.RawMessage, p *core.Player) *core.Result {
+	return core.NewSuccessResult(s.rooms)
 }
 
 // Listen starts the server
-func (gs *GameServer) Listen() {
-	log.Printf("GameServer is started on %v\n", gs.pattern)
+func (s *Server) Listen() {
+	log.Printf("GameServer is started on %v\n", s.pattern)
 
-	http.Handle(gs.pattern, websocket.Handler(func(ws *websocket.Conn) {
+	http.Handle(s.pattern, websocket.Handler(func(ws *websocket.Conn) {
 		player := core.NewPlayer(ws, []*core.CommandHandler{
 			{
 				Name:   "join",
-				Handle: gs.OnJoin,
+				Handle: s.OnJoin,
 			},
 			{
 				Name:   "rooms",
-				Handle: gs.OnRooms,
+				Handle: s.OnRooms,
 			},
 		})
 
-		gs.clientsLock.Lock()
-		defer gs.clientsLock.Unlock()
+		s.clientsLock.Lock()
+		defer s.clientsLock.Unlock()
 
-		gs.players = append(gs.players, player)
+		s.players = append(s.players, player)
 	}))
 }

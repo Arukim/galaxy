@@ -4,10 +4,17 @@ import (
 	"encoding/json"
 )
 
-// Command is model for network commands
-type Command struct {
+// CommandJSON is model for network commands
+type CommandJSON struct {
 	Cmd  string           `json:"cmd"`
 	Data *json.RawMessage `json:"data"`
+}
+
+// Command is internal command structure, command usually are sent from
+// server to client
+type Command struct {
+	Cmd  string      `json:"cmd"`
+	Data interface{} `json:"data"`
 }
 
 // ResponseJSON is sent over the web socket to client

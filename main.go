@@ -26,7 +26,7 @@ func main() {
 		http.ServeFile(w, r, r.URL.Path[1:])
 	})
 
-	gs := login.NewGameServer("/galaxy")
+	gs := login.NewServer("/galaxy")
 	gs.Listen()
 
 	log.Print("server started")

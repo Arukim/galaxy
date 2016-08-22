@@ -34,9 +34,8 @@ func (m *Map) Init() {
 		zone := &m.Zones[i]
 
 		zone.Init()
-
-		log.Printf("zone %v", *zone)
 	}
+	log.Println("map generated")
 }
 
 // Spawn the energy

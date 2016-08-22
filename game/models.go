@@ -1,20 +1,21 @@
 package game
 
 // GameInfo is send on game start
-type GameInfo struct {
-	maxTurns            int
-	players             []string
-	mapWidth, mapHeight int
+type gameInfo struct {
+	MaxTurns  int      `json:"maxTurns"`
+	Players   []string `json:"players"`
+	MapWidth  int      `json:"mapWidth"`
+	MapHeight int      `json:"mapHeight"`
 }
 
-type TurnInfo struct {
-	turn int
+type gameResult struct {
+	Winner string `json:"winner"`
 }
 
-type PlayerTurn struct {
-	PlayerId int
+type turnInfo struct {
+	Turn int `json:"turn"`
 }
 
-type PlayerInfo struct {
-	name string
+type playerTurn struct {
+	PlayerID int
 }

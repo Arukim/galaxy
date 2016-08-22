@@ -13,15 +13,15 @@ type IPlayerConnection interface {
 type Player struct {
 	id         int
 	name       string
-	currTurn   PlayerTurn
+	currTurn   playerTurn
 	conn       IPlayerConnection
-	turnCh     chan *PlayerTurn
+	turnCh     chan *playerTurn
 	isActive   bool
 	activeLock *sync.Mutex
 }
 
 // NewPlayer creates new player
-func NewPlayer(turnCh chan *PlayerTurn, conn IPlayerConnection, id int) *Player {
+func NewPlayer(turnCh chan *playerTurn, conn IPlayerConnection, id int) *Player {
 	p := Player{
 		turnCh: turnCh,
 		conn:   conn,
@@ -50,14 +50,12 @@ func (p *Player) EndTurn() {
 // Handle handles data from socket
 func (p *Player) Handle(data interface{}) {
 	switch data.(type) {
-	case PlayerInfo:
-		p.name = data.(PlayerInfo).name
-	case PlayerTurn:
+	case playerTurn:
 		p.activeLock.Lock()
 		defer p.activeLock.Unlock()
 		if p.isActive {
-			currTurn := data.(PlayerTurn)
-			currTurn.PlayerId = p.id
+			currTurn := data.(playerTurn)
+			currTurn.PlayerID = p.id
 			p.turnCh <- &currTurn
 			p.isActive = false
 		}

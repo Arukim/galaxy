@@ -4,18 +4,18 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-// WebClient stoers websocket and current routing data
+// Player stoers websocket and current routing data
 type Player struct {
-	router *Router
-	ws     *websocket.Conn
+	Name   string
+	Router *Router
 }
 
-// NewWebClient creates
+// NewPlayer creates
 func NewPlayer(ws *websocket.Conn, handlers []*CommandHandler) *Player {
-	c := Player{
-		ws: ws,
-	}
-	c.router = NewRouter(handlers, &c)
-	c.router.Listen(ws)
-	return &c
+	p := &Player{}
+
+	p.Router = NewRouter(handlers, p)
+	p.Router.Listen(ws)
+
+	return p
 }
