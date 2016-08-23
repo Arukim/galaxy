@@ -50,5 +50,5 @@ func NewErrorResult(data interface{}) *Result {
 // CommandHandler handles one command
 type CommandHandler struct {
 	Name   string
-	Handle func(Data *json.RawMessage, p *Player) *Result
+	Handle func(Data *json.RawMessage, p *Client) *Result
 }

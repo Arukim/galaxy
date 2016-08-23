@@ -10,8 +10,8 @@ import (
 
 // Server (game) contains game information
 type Server struct {
-	Map     *Map
-	Players []*core.Player
+	galaxy  *galaxy
+	Players []*player
 
 	//settings
 	maxPlayers, maxTurns int
@@ -19,7 +19,7 @@ type Server struct {
 	turnTimeout          time.Duration
 
 	currTurn          int
-	playersCount      int
+	clientsCount      int
 	turnCh            chan *playerTurn
 	turnProccessCount chan bool
 }
@@ -43,25 +43,28 @@ func NewServer(settings *ServerSettings) *Server {
 	s.turnCh = make(chan *playerTurn, s.maxPlayers)
 	s.turnProccessCount = make(chan bool, s.maxPlayers)
 
-	s.Map = NewMap(10, 10)
+	s.galaxy = newGalaxy(10, 10)
 
 	return &s
 }
 
-// AddPlayers populate game with players
-func (s *Server) AddPlayers(players []*core.Player) {
-	s.Players = players
-	s.playersCount = len(players)
+// AddClients populate game with players
+func (s *Server) AddClients(clients []*core.Client) {
+	s.clientsCount = len(clients)
+	s.Players = make([]*player, len(clients))
+	for i, c := range clients {
+		s.Players[i] = newPlayer(s.turnCh, c, s.galaxy, i)
+	}
 }
 
 // MakeTurn Proccess one game turn
 func (s *Server) MakeTurn() {
 	log.Printf("Turn %d has started\n", s.currTurn)
 
-	tInfo := turnInfo{Turn: s.currTurn}
-
 	// send turn info to players
-	s.broadcast("turnInfo", &tInfo)
+	for _, p := range s.Players {
+		go p.sendTurnInfo(s.currTurn)
+	}
 
 	// wait until all make turn or timeout
 	var timeout = helpers.NewTimeout(s.turnTimeout)
@@ -69,7 +72,7 @@ func (s *Server) MakeTurn() {
 
 mainReceiveLoop:
 	// or all players will send turn or timeout should work
-	for receivedTurns < s.playersCount {
+	for receivedTurns < s.clientsCount {
 		select {
 		case t := <-s.turnCh:
 			go s.makePlayerTurn(t)
@@ -114,17 +117,17 @@ func (s *Server) makePlayerTurn(t *playerTurn) {
 
 func (s *Server) broadcast(com string, data interface{}) {
 	for _, p := range s.Players {
-		go p.Router.Send(com, data)
+		go p.send(com, data)
 	}
 }
 
 // Start func to start the game
 func (s *Server) Start() {
-	s.Map.Init()
-	players := make([]string, s.playersCount)
+	s.galaxy.init()
+	players := make([]string, s.clientsCount)
 	for i, p := range s.Players {
 		players[i] = p.Name
-		p.Router.SetHandlers([]*core.CommandHandler{})
+		p.connect()
 	}
 
 	gInfo := gameInfo{
@@ -136,6 +139,11 @@ func (s *Server) Start() {
 
 	s.broadcast("gameInfo", &gInfo)
 
+	// seed start spaceship
+	for _, p := range s.Players {
+		p.init()
+	}
+
 	for true {
 		if s.currTurn < s.maxTurns {
 			s.MakeTurn()
@@ -145,7 +153,7 @@ func (s *Server) Start() {
 			s.broadcast("gameResult", &gameInfo)
 
 			for _, p := range s.Players {
-				p.Router.SetHandlers(p.DefaultHandlers)
+				p.disconnect()
 			}
 			return
 		}

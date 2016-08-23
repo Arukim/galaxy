@@ -12,10 +12,6 @@ type gameResult struct {
 	Winner string `json:"winner"`
 }
 
-type turnInfo struct {
-	Turn int `json:"turn"`
-}
-
 type playerTurn struct {
 	PlayerID int
 }

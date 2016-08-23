@@ -14,7 +14,7 @@ type Room struct {
 	Name           string `json:"name"`
 	PlayersPerGame int    `json:"playersPerGame"`
 	PlayersCount   int    `json:"playersCount"`
-	players        []*core.Player
+	clients        []*core.Client
 	lock           *sync.Mutex
 }
 
@@ -31,19 +31,19 @@ func NewRoom(s RoomSettings) *Room {
 		PlayersPerGame: s.PlayersPerGame,
 	}
 
-	r.players = []*core.Player{}
+	r.clients = []*core.Client{}
 	r.lock = &sync.Mutex{}
 
 	return &r
 }
 
 // AddPlayer into game room
-func (r *Room) AddPlayer(p *core.Player) {
+func (r *Room) AddClient(p *core.Client) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.players = append(r.players, p)
-	log.Println(r.players)
+	r.clients = append(r.clients, p)
+	log.Println(r.clients)
 	r.PlayersCount++
 
 	if r.PlayersCount >= r.PlayersPerGame {
@@ -58,9 +58,9 @@ func (r *Room) AddPlayer(p *core.Player) {
 
 		g := game.NewServer(&s)
 
-		g.AddPlayers(r.players[:r.PlayersPerGame])
+		g.AddClients(r.clients[:r.PlayersPerGame])
 
-		r.players = r.players[r.PlayersPerGame:]
+		r.clients = r.clients[r.PlayersPerGame:]
 		r.PlayersCount -= r.PlayersPerGame
 
 		go g.Start()

@@ -17,7 +17,7 @@ import (
 type Server struct {
 	pattern string
 	rooms   []*Room
-	players []*core.Player
+	clients []*core.Client
 
 	clientsLock *sync.Mutex
 }
@@ -29,7 +29,7 @@ func NewServer(pattern string) *Server {
 	}
 
 	s.clientsLock = &sync.Mutex{}
-	s.players = []*core.Player{}
+	s.clients = []*core.Client{}
 
 	s.rooms = []*Room{
 		NewRoom(RoomSettings{Name: "red room", PlayersPerGame: 1}),
@@ -40,7 +40,7 @@ func NewServer(pattern string) *Server {
 }
 
 // OnJoin - player is trying to enter room
-func (s *Server) OnJoin(d *json.RawMessage, p *core.Player) *core.Result {
+func (s *Server) OnJoin(d *json.RawMessage, c *core.Client) *core.Result {
 	var resp *core.Result
 	var roomName string
 	json.Unmarshal(*d, &roomName)
@@ -54,7 +54,7 @@ func (s *Server) OnJoin(d *json.RawMessage, p *core.Player) *core.Result {
 
 	if err == nil && found {
 		room := r.(*Room)
-		go room.AddPlayer(p)
+		go room.AddClient(c)
 		resp = core.NewSuccessResult("joined the room " + room.Name)
 	} else {
 		resp = core.NewErrorResult(fmt.Sprintf("room %s not found", roomName))
@@ -64,7 +64,7 @@ func (s *Server) OnJoin(d *json.RawMessage, p *core.Player) *core.Result {
 }
 
 // OnRooms - player is quering rooms
-func (s *Server) OnRooms(d *json.RawMessage, p *core.Player) *core.Result {
+func (s *Server) OnRooms(d *json.RawMessage, p *core.Client) *core.Result {
 	return core.NewSuccessResult(s.rooms)
 }
 
@@ -87,11 +87,11 @@ func (s *Server) Listen() {
 	log.Printf("GameServer is started on %v\n", s.pattern)
 
 	http.Handle(s.pattern, websocket.Handler(func(ws *websocket.Conn) {
-		player := core.NewPlayer(ws, s.Handlers())
+		player := core.NewClient(ws, s.Handlers())
 
 		s.clientsLock.Lock()
 		defer s.clientsLock.Unlock()
 
-		s.players = append(s.players, player)
+		s.clients = append(s.clients, player)
 	}))
 }

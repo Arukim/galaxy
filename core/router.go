@@ -15,7 +15,7 @@ import (
 type Router struct {
 	handlers        map[string]*CommandHandler
 	conn            *websocket.Conn
-	player          *Player
+	client          *Client
 	allowedCommands string
 	exit            chan bool
 
@@ -23,12 +23,12 @@ type Router struct {
 }
 
 // NewRouter creates new router instance
-func NewRouter(handlers []*CommandHandler, p *Player) *Router {
+func NewRouter(handlers []*CommandHandler, c *Client) *Router {
 	r := &Router{}
 
 	r.exit = make(chan bool)
 	r.handlersLock = &sync.Mutex{}
-	r.player = p
+	r.client = c
 
 	r.SetHandlers(handlers)
 
@@ -99,7 +99,7 @@ func (r *Router) Listen(conn *websocket.Conn) {
 		// if we found handler - execute
 		if ok {
 			log.Printf("handling %v", cmd.Cmd)
-			res = handler.Handle(cmd.Data, r.player)
+			res = handler.Handle(cmd.Data, r.client)
 			// else provide some data about problem
 		} else {
 			res = &Result{
