@@ -71,9 +71,6 @@ func (r *Router) SetHandlers(handlers []*CommandHandler) {
 
 // Listen handles web socket read
 func (r *Router) Listen(conn *websocket.Conn) {
-	// close connection if we'r done
-	defer r.conn.Close()
-
 	log.Println("client connected")
 	r.conn = conn
 
