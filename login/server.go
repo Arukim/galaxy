@@ -68,21 +68,26 @@ func (s *Server) OnRooms(d *json.RawMessage, p *core.Player) *core.Result {
 	return core.NewSuccessResult(s.rooms)
 }
 
+// Handlers returns GameServer handlers
+func (s *Server) Handlers() []*core.CommandHandler {
+	return []*core.CommandHandler{
+		{
+			Name:   "join",
+			Handle: s.OnJoin,
+		},
+		{
+			Name:   "rooms",
+			Handle: s.OnRooms,
+		},
+	}
+}
+
 // Listen starts the server
 func (s *Server) Listen() {
 	log.Printf("GameServer is started on %v\n", s.pattern)
 
 	http.Handle(s.pattern, websocket.Handler(func(ws *websocket.Conn) {
-		player := core.NewPlayer(ws, []*core.CommandHandler{
-			{
-				Name:   "join",
-				Handle: s.OnJoin,
-			},
-			{
-				Name:   "rooms",
-				Handle: s.OnRooms,
-			},
-		})
+		player := core.NewPlayer(ws, s.Handlers())
 
 		s.clientsLock.Lock()
 		defer s.clientsLock.Unlock()

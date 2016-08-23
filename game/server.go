@@ -124,6 +124,7 @@ func (s *Server) Start() {
 	players := make([]string, s.playersCount)
 	for i, p := range s.Players {
 		players[i] = p.Name
+		p.Router.SetHandlers([]*core.CommandHandler{})
 	}
 
 	gInfo := gameInfo{
@@ -142,6 +143,10 @@ func (s *Server) Start() {
 			log.Println("game has ended")
 			gameInfo := gameResult{Winner: "no one"}
 			s.broadcast("gameResult", &gameInfo)
+
+			for _, p := range s.Players {
+				p.Router.SetHandlers(p.DefaultHandlers)
+			}
 			return
 		}
 	}
