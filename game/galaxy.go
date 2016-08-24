@@ -7,7 +7,7 @@ import (
 
 // Map is storing game map
 type galaxy struct {
-	zones  []zone
+	zones  []*zone
 	width  int
 	height int
 }
@@ -17,7 +17,7 @@ func (g *galaxy) get(r, c int) *zone {
 	if r*g.width+c >= g.width*g.height {
 		return nil
 	}
-	return &g.zones[r*g.width+c]
+	return g.zones[r*g.width+c]
 }
 
 // NewGalaxy creates new instance of Map
@@ -26,15 +26,16 @@ func newGalaxy(width, height int) *galaxy {
 
 	g.width = width
 	g.height = height
-	g.zones = make([]zone, g.width*g.height)
+	g.zones = make([]*zone, g.width*g.height)
 
 	return g
 }
 
 // Init to initialize Map
 func (g *galaxy) init() {
-	for _, z := range g.zones {
-		z.Init()
+	for i := range g.zones {
+		g.zones[i] = &zone{}
+		g.zones[i].Init()
 	}
 	log.Println("map generated")
 }

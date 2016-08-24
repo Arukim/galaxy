@@ -108,6 +108,9 @@ cleanUpLoop:
 
 	// all player turns are applied, calculate turn end
 
+	// now is galaxy turn
+	s.galaxy.spawn()
+
 	s.currTurn++
 }
 
