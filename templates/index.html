@@ -44,6 +44,23 @@
                 };
                 socket.onmessage = function(e) {
                     container.append("<p>Server says: " + e.data + "</p>");
+                    var p = JSON.parse(e.data)
+                    if (p.cmd == "turnInfo") {
+                        socket.send(JSON.stringify({
+                            cmd: 'makeTurn',
+                            data: {
+                                turn: p.data.turn,
+                                spaceships: [{
+                                    id: 0,
+                                    action: 'move',
+                                    pos: {
+                                        x: 1,
+                                        y: 1
+                                    }
+                                }]
+                            }
+                        }))
+                    }
                 }
                 socket.onclose = function() {
                     container.append("<p>Disconnected from server</p>");

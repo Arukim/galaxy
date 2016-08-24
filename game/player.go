@@ -1,6 +1,7 @@
 package game
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/arukim/galaxy/core"
@@ -10,7 +11,7 @@ import (
 type player struct {
 	id         int
 	Name       string
-	currTurn   playerTurn
+	currTurn   int
 	client     *core.Client
 	turnCh     chan *playerTurn
 	isActive   bool
@@ -25,6 +26,19 @@ type turnInfo struct {
 	Spaceships []*spaceshipInfo `json:"spaceships"`
 }
 
+// Client turn
+type playerTurn struct {
+	Turn       int              `json:"turn"`
+	PlayerID   int              `json:"-"`
+	Spaceships []*spaceshipTurn `json:"spaceships"`
+}
+
+type spaceshipTurn struct {
+	ID     int    `json:"id"`
+	Action string `json:"action"`
+	Pos    point  `json:"point"`
+}
+
 // NewPlayer creates new player
 func newPlayer(turnCh chan *playerTurn, c *core.Client, g *galaxy, id int) *player {
 	p := player{
@@ -34,6 +48,7 @@ func newPlayer(turnCh chan *playerTurn, c *core.Client, g *galaxy, id int) *play
 		Name:       c.Name,
 		Spaceships: []*spaceship{},
 		galaxy:     g,
+		activeLock: &sync.Mutex{},
 	}
 
 	return &p
@@ -49,15 +64,45 @@ func (p *player) sendTurnInfo(turn int) {
 		ti.Spaceships = append(ti.Spaceships, p.galaxy.getSpaceshipInfo(s))
 	}
 
+	p.activeLock.Lock()
+	defer p.activeLock.Unlock()
+
+	p.isActive = true
+	p.currTurn = turn
 	p.client.Router.Send("turnInfo", &ti)
 }
 
 func (p *player) handlers() []*core.CommandHandler {
-	return []*core.CommandHandler{}
+	return []*core.CommandHandler{
+		{
+			Name:   "makeTurn",
+			Handle: p.onTurn,
+		},
+	}
 }
 
 func (p *player) init() {
 	p.Spaceships = append(p.Spaceships, p.galaxy.spawnSpaceship(p.id))
+}
+
+func (p *player) onTurn(d *json.RawMessage, c *core.Client) *core.Result {
+	var resp *core.Result
+	var turn playerTurn
+
+	json.Unmarshal(*d, &turn)
+
+	p.activeLock.Lock()
+	defer p.activeLock.Unlock()
+	if p.isActive && p.currTurn == turn.Turn {
+		turn.PlayerID = p.id
+		p.turnCh <- &turn
+		p.isActive = false
+		resp = core.NewSuccessResult("turn accepted")
+	} else {
+		resp = core.NewErrorResult("turn not accepted")
+	}
+
+	return resp
 }
 
 // Send something to client
@@ -75,33 +120,10 @@ func (p *player) disconnect() {
 	p.client.Router.SetHandlers(p.client.DefaultHandlers)
 }
 
-// StartTurn should be called at the start of turn
-func (p *player) startTurn() {
-	p.activeLock.Lock()
-	defer p.activeLock.Unlock()
-
-	p.isActive = true
-}
-
 // EndTurn should be callled at the end of turn
 func (p *player) endTurn() {
 	p.activeLock.Lock()
 	defer p.activeLock.Unlock()
 
 	p.isActive = false
-}
-
-// Handle handles data from socket
-func (p *player) handle(data interface{}) {
-	switch data.(type) {
-	case playerTurn:
-		p.activeLock.Lock()
-		defer p.activeLock.Unlock()
-		if p.isActive {
-			currTurn := data.(playerTurn)
-			currTurn.PlayerID = p.id
-			p.turnCh <- &currTurn
-			p.isActive = false
-		}
-	}
 }
