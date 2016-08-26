@@ -72,6 +72,12 @@ func (p *player) sendTurnInfo(turn int) {
 	p.client.Router.Send("turnInfo", &ti)
 }
 
+func (p *player) collectEnergy() {
+	for _, s := range p.Spaceships {
+		s.collect(p.galaxy.getPos(s.Pos))
+	}
+}
+
 func (p *player) handlers() []*core.CommandHandler {
 	return []*core.CommandHandler{
 		{
@@ -88,7 +94,6 @@ func (p *player) init() {
 func (p *player) onTurn(d *json.RawMessage, c *core.Client) *core.Result {
 	var resp *core.Result
 	var turn playerTurn
-
 	json.Unmarshal(*d, &turn)
 
 	p.activeLock.Lock()

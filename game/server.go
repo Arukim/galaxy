@@ -107,7 +107,10 @@ cleanUpLoop:
 	}
 
 	// all player turns are applied, calculate turn end
-
+	// lets eat energy
+	for _, p := range s.Players {
+		p.collectEnergy()
+	}
 	// now is galaxy turn
 	s.galaxy.spawn()
 
@@ -128,6 +131,7 @@ func (s *Server) broadcast(com string, data interface{}) {
 func (s *Server) Start() {
 	s.galaxy.init()
 	players := make([]string, s.clientsCount)
+
 	for i, p := range s.Players {
 		players[i] = p.Name
 		p.connect()

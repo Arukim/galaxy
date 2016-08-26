@@ -20,6 +20,10 @@ func (g *galaxy) get(r, c int) *zone {
 	return g.zones[r*g.width+c]
 }
 
+func (g *galaxy) getPos(p point) *zone {
+	return g.get(p.X, p.Y)
+}
+
 // NewGalaxy creates new instance of Map
 func newGalaxy(width, height int) *galaxy {
 	g := new(galaxy)
