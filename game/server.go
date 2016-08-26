@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -156,7 +157,11 @@ func (s *Server) Start() {
 			s.MakeTurn()
 		} else {
 			log.Println("game has ended")
-			gameInfo := gameResult{Winner: "no one"}
+
+			winner := s.findWinner()
+
+			gameInfo := gameResult{Result: fmt.Sprintf("player %v wins", winner.Name)}
+
 			s.broadcast("gameResult", &gameInfo)
 
 			for _, p := range s.Players {
@@ -165,4 +170,19 @@ func (s *Server) Start() {
 			return
 		}
 	}
+}
+
+func (s *Server) findWinner() *player {
+	var winner *player
+	maxScore := 0
+
+	for _, p := range s.Players {
+		pScore := p.getScore()
+		if winner == nil || pScore > maxScore {
+			winner = p
+			maxScore = pScore
+		}
+	}
+
+	return winner
 }

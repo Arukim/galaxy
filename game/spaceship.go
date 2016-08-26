@@ -58,3 +58,7 @@ func (s *spaceship) collect(z *zone) {
 		z.currEnergy -= float64(available)
 	}
 }
+
+func (s *spaceship) getScore() int {
+	return s.Energy
+}

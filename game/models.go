@@ -9,5 +9,5 @@ type gameInfo struct {
 }
 
 type gameResult struct {
-	Winner string `json:"winner"`
+	Result string `json:"winner"`
 }

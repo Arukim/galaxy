@@ -78,6 +78,14 @@ func (p *player) collectEnergy() {
 	}
 }
 
+func (p *player) getScore() int {
+	var total = 0
+	for _, s := range p.Spaceships {
+		total += s.getScore()
+	}
+	return total
+}
+
 func (p *player) handlers() []*core.CommandHandler {
 	return []*core.CommandHandler{
 		{

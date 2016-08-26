@@ -1,6 +1,7 @@
 package login
 
 import (
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -37,12 +38,16 @@ func NewRoom(s RoomSettings) *Room {
 	return &r
 }
 
-// AddPlayer into game room
-func (r *Room) AddClient(p *core.Client) {
+// AddClient into game room
+func (r *Room) AddClient(c *core.Client) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	r.clients = append(r.clients, p)
+	if c.Name == "" {
+		c.Name = fmt.Sprintf("Player%v", r.PlayersCount)
+	}
+
+	r.clients = append(r.clients, c)
 	log.Println(r.clients)
 	r.PlayersCount++
 
