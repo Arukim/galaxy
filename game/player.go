@@ -19,11 +19,13 @@ type player struct {
 	galaxy     *galaxy
 
 	Spaceships []*spaceship
+	starbases  []*starbase
 }
 
 type turnInfo struct {
 	Turn       int              `json:"turn"`
 	Spaceships []*spaceshipInfo `json:"spaceships"`
+	Starbases  []*starbaseInfo  `json:"starbases"`
 }
 
 // Client turn
@@ -64,6 +66,10 @@ func (p *player) sendTurnInfo(turn int) {
 		ti.Spaceships = append(ti.Spaceships, p.galaxy.getSpaceshipInfo(s))
 	}
 
+	for _, s := range p.starbases {
+		ti.Starbases = append(ti.Starbases, s.toInfo())
+	}
+
 	p.activeLock.Lock()
 	defer p.activeLock.Unlock()
 
@@ -96,7 +102,9 @@ func (p *player) handlers() []*core.CommandHandler {
 }
 
 func (p *player) init() {
-	p.Spaceships = append(p.Spaceships, p.galaxy.spawnSpaceship(p.id))
+	pos := p.galaxy.getStartLocation(p.id)
+	p.starbases = append(p.starbases, newStarbase(pos, p.id))
+	p.Spaceships = append(p.Spaceships, newSpaceship(pos, p.id))
 }
 
 func (p *player) onTurn(d *json.RawMessage, c *core.Client) *core.Result {

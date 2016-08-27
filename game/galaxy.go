@@ -51,18 +51,18 @@ func (g *galaxy) spawn() {
 	}
 }
 
-// spawn ship at start location
-func (g *galaxy) spawnSpaceship(owner int) *spaceship {
+// getStartLocation generates start location for player
+func (g *galaxy) getStartLocation(owner int) point {
 	pos := point{
 		X: rand.Intn(g.width),
 		Y: rand.Intn(g.height),
 	}
-	return newSpaceship(pos, owner)
+	return pos
 }
 
 // Get info about one spaceship (surround view and etc)
 func (g *galaxy) getSpaceshipInfo(s *spaceship) *spaceshipInfo {
-	res := s.spaceshipInfo(true)
+	res := s.toInfo(true)
 	viewZone := getAllPointsInCircle(s.Radar)
 
 	for _, v := range viewZone {
@@ -76,7 +76,7 @@ func (g *galaxy) getSpaceshipInfo(s *spaceship) *spaceshipInfo {
 			}
 			if v.X == 0 && v.Y == 0 {
 				zInfo.Spaceships = []*spaceshipInfo{
-					s.spaceshipInfo(false),
+					s.toInfo(false),
 				}
 			}
 			res.View = append(res.View, zInfo)

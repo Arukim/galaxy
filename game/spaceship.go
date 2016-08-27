@@ -31,7 +31,7 @@ func newSpaceship(pos point, owner int) *spaceship {
 }
 
 // create spaceshipInfo
-func (s *spaceship) spaceshipInfo(isFull bool) *spaceshipInfo {
+func (s *spaceship) toInfo(isFull bool) *spaceshipInfo {
 	i := &spaceshipInfo{
 		Level:     s.Level,
 		Owner:     s.Owner,
