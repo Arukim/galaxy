@@ -24,6 +24,12 @@ func (g *galaxy) getPos(p point) *zone {
 	return g.get(p.X, p.Y)
 }
 
+func (g *galaxy) wrapPoint(p point) point {
+	p.X = wrapBetween(p.X, 0, g.width)
+	p.Y = wrapBetween(p.Y, 0, g.height)
+	return p
+}
+
 // NewGalaxy creates new instance of Map
 func newGalaxy(width, height int) *galaxy {
 	g := new(galaxy)
@@ -66,7 +72,7 @@ func (g *galaxy) getSpaceshipInfo(s *spaceship) *spaceshipInfo {
 	viewZone := getAllPointsInCircle(s.radar)
 
 	for _, v := range viewZone {
-		p := s.pos.Add(v)
+		p := g.wrapPoint(s.pos.Add(*v))
 		zone := g.get(p.X, p.Y)
 
 		if zone != nil {

@@ -7,10 +7,12 @@ type spaceship struct {
 	owner     int
 	energy    int
 	maxEnergy int
+	id        int
 }
 
 // spaceshipInfo is sent to player
 type spaceshipInfo struct {
+	ID        int         `json:"id"`
 	Level     int         `json:"level"`
 	Owner     int         `json:"owner"`
 	Radar     int         `json:"radar"`
@@ -19,12 +21,13 @@ type spaceshipInfo struct {
 	View      []*zoneInfo `json:"view,omitempty"`
 }
 
-func newSpaceship(pos point, owner int) *spaceship {
+func newSpaceship(pos point, owner int, id int) *spaceship {
 	return &spaceship{
 		pos:       pos,
 		radar:     1,
 		level:     1,
 		owner:     owner,
+		id:        id,
 		energy:    1,
 		maxEnergy: 100,
 	}
@@ -36,6 +39,7 @@ func (s *spaceship) toInfo(isFull bool) *spaceshipInfo {
 		Level:     s.level,
 		Owner:     s.owner,
 		MaxEnergy: s.maxEnergy,
+		ID:        s.id,
 	}
 
 	if isFull {

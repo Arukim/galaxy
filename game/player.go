@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"log"
 	"sync"
 
 	"github.com/arukim/galaxy/core"
@@ -13,10 +14,12 @@ type player struct {
 	Name       string
 	currTurn   int
 	client     *core.Client
-	turnCh     chan *playerTurn
 	isActive   bool
 	activeLock *sync.Mutex
 	galaxy     *galaxy
+
+	turnStartCh chan bool
+	turnEndCh   chan bool
 
 	Spaceships []*spaceship
 	starbases  []*starbase
@@ -30,27 +33,28 @@ type turnInfo struct {
 
 // Client turn
 type playerTurn struct {
-	Turn       int              `json:"turn"`
-	PlayerID   int              `json:"-"`
-	Spaceships []*spaceshipTurn `json:"spaceships"`
+	Turn       int             `json:"turn"`
+	PlayerID   int             `json:"-"`
+	Spaceships []spaceshipTurn `json:"spaceships"`
 }
 
 type spaceshipTurn struct {
 	ID     int    `json:"id"`
 	Action string `json:"action"`
-	Pos    point  `json:"point"`
+	Pos    point  `json:"pos"`
 }
 
 // NewPlayer creates new player
-func newPlayer(turnCh chan *playerTurn, c *core.Client, g *galaxy, id int) *player {
+func newPlayer(turnCh chan bool, turnEnd chan bool, c *core.Client, g *galaxy, id int) *player {
 	p := player{
-		turnCh:     turnCh,
-		client:     c,
-		id:         id,
-		Name:       c.Name,
-		Spaceships: []*spaceship{},
-		galaxy:     g,
-		activeLock: &sync.Mutex{},
+		turnStartCh: turnCh,
+		turnEndCh:   turnEnd,
+		client:      c,
+		id:          id,
+		Name:        c.Name,
+		Spaceships:  []*spaceship{},
+		galaxy:      g,
+		activeLock:  &sync.Mutex{},
 	}
 
 	return &p
@@ -75,6 +79,7 @@ func (p *player) sendTurnInfo(turn int) {
 
 	p.isActive = true
 	p.currTurn = turn
+
 	p.client.Router.Send("turnInfo", &ti)
 }
 
@@ -104,7 +109,7 @@ func (p *player) handlers() []*core.CommandHandler {
 func (p *player) init() {
 	pos := p.galaxy.getStartLocation(p.id)
 	p.starbases = append(p.starbases, newStarbase(pos, p.id))
-	p.Spaceships = append(p.Spaceships, newSpaceship(pos, p.id))
+	p.Spaceships = append(p.Spaceships, newSpaceship(pos, p.id, 0))
 }
 
 func (p *player) onTurn(d *json.RawMessage, c *core.Client) *core.Result {
@@ -116,14 +121,36 @@ func (p *player) onTurn(d *json.RawMessage, c *core.Client) *core.Result {
 	defer p.activeLock.Unlock()
 	if p.isActive && p.currTurn == turn.Turn {
 		turn.PlayerID = p.id
-		p.turnCh <- &turn
+		p.turnStartCh <- true
 		p.isActive = false
+		go p.processTurn(&turn)
 		resp = core.NewSuccessResult("turn accepted")
 	} else {
 		resp = core.NewErrorResult("turn not accepted")
 	}
 
 	return resp
+}
+
+func (p *player) processTurn(t *playerTurn) {
+
+	log.Printf("%v", t.Spaceships[0])
+shipLoop:
+	for _, shipTurn := range t.Spaceships {
+		// TODO check income data
+		ship := p.Spaceships[shipTurn.ID]
+		if ship == nil {
+			continue shipLoop
+		}
+
+		if shipTurn.Pos.GetDistance(point{}) <= ship.level {
+			ship.pos = p.galaxy.wrapPoint(ship.pos.Add(shipTurn.Pos))
+			log.Printf("new pos of %v is %v", ship.id, ship.pos)
+		}
+		//if shipTurn.Pos
+		shipTurn.ID++
+	}
+	p.turnEndCh <- true
 }
 
 // Send something to client

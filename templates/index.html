@@ -33,7 +33,7 @@
             }
 
             function initWS() {
-                var socket = new WebSocket("ws://{{.Host}}/galaxy"),
+                var socket = new WebSocket("ws://" + location.host + "/galaxy"),
                     container = $("#container")
                 socket.onopen = function() {
                     container.append("<p>Connected to server</p>");

@@ -21,7 +21,8 @@ type Server struct {
 
 	currTurn          int
 	clientsCount      int
-	turnCh            chan *playerTurn
+	turnStartCh       chan bool
+	turnEndCh         chan bool
 	turnProccessCount chan bool
 }
 
@@ -41,7 +42,8 @@ func NewServer(settings *ServerSettings) *Server {
 	s.turnTimeout = settings.TurnTimeout
 	s.mapWidth = settings.MapWidth
 	s.mapHeight = settings.MapHeight
-	s.turnCh = make(chan *playerTurn, s.maxPlayers)
+	s.turnStartCh = make(chan bool, s.maxPlayers)
+	s.turnEndCh = make(chan bool, s.maxPlayers)
 	s.turnProccessCount = make(chan bool, s.maxPlayers)
 
 	s.galaxy = newGalaxy(10, 10)
@@ -54,7 +56,7 @@ func (s *Server) AddClients(clients []*core.Client) {
 	s.clientsCount = len(clients)
 	s.Players = make([]*player, len(clients))
 	for i, c := range clients {
-		s.Players[i] = newPlayer(s.turnCh, c, s.galaxy, i)
+		s.Players[i] = newPlayer(s.turnStartCh, s.turnEndCh, c, s.galaxy, i)
 	}
 }
 
@@ -75,8 +77,7 @@ mainReceiveLoop:
 	// or all players will send turn or timeout should work
 	for receivedTurns < s.clientsCount {
 		select {
-		case t := <-s.turnCh:
-			go s.makePlayerTurn(t)
+		case <-s.turnStartCh:
 			receivedTurns++
 		case <-timeout.Alarm:
 			break mainReceiveLoop
@@ -91,8 +92,7 @@ mainReceiveLoop:
 cleanUpLoop:
 	for {
 		select {
-		case t := <-s.turnCh:
-			go s.makePlayerTurn(t)
+		case <-s.turnStartCh:
 			receivedTurns++
 		default:
 			break cleanUpLoop
@@ -102,7 +102,7 @@ cleanUpLoop:
 	// now wait until all player turns are made
 	for receivedTurns > 0 {
 		select {
-		case <-s.turnProccessCount:
+		case <-s.turnEndCh:
 			receivedTurns--
 		}
 	}
