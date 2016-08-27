@@ -80,7 +80,7 @@ func (p *player) sendTurnInfo(turn int) {
 
 func (p *player) collectEnergy() {
 	for _, s := range p.Spaceships {
-		s.collect(p.galaxy.getPos(s.Pos))
+		s.collect(p.galaxy.getPos(s.pos))
 	}
 }
 

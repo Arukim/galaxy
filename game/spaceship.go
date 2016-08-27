@@ -1,12 +1,12 @@
 package game
 
 type spaceship struct {
-	Pos       point
-	Radar     int
-	Level     int
-	Owner     int
-	Energy    int
-	MaxEnergy int
+	pos       point
+	radar     int
+	level     int
+	owner     int
+	energy    int
+	maxEnergy int
 }
 
 // spaceshipInfo is sent to player
@@ -21,44 +21,44 @@ type spaceshipInfo struct {
 
 func newSpaceship(pos point, owner int) *spaceship {
 	return &spaceship{
-		Pos:       pos,
-		Radar:     1,
-		Level:     1,
-		Owner:     owner,
-		Energy:    1,
-		MaxEnergy: 100,
+		pos:       pos,
+		radar:     1,
+		level:     1,
+		owner:     owner,
+		energy:    1,
+		maxEnergy: 100,
 	}
 }
 
 // create spaceshipInfo
 func (s *spaceship) toInfo(isFull bool) *spaceshipInfo {
 	i := &spaceshipInfo{
-		Level:     s.Level,
-		Owner:     s.Owner,
-		MaxEnergy: s.MaxEnergy,
+		Level:     s.level,
+		Owner:     s.owner,
+		MaxEnergy: s.maxEnergy,
 	}
 
 	if isFull {
-		i.Radar = s.Radar
-		i.Energy = s.Energy
+		i.Radar = s.radar
+		i.Energy = s.energy
 	}
 
 	return i
 }
 
 func (s *spaceship) collect(z *zone) {
-	canAbsorb := s.MaxEnergy - s.Energy
+	canAbsorb := s.maxEnergy - s.energy
 	available := int(z.currEnergy)
 
 	if available >= canAbsorb {
-		s.Energy = s.MaxEnergy
+		s.energy = s.maxEnergy
 		z.currEnergy -= float64(canAbsorb)
 	} else {
-		s.Energy += available
+		s.energy += available
 		z.currEnergy -= float64(available)
 	}
 }
 
 func (s *spaceship) getScore() int {
-	return s.Energy
+	return s.energy
 }

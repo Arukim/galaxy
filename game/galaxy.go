@@ -63,10 +63,10 @@ func (g *galaxy) getStartLocation(owner int) point {
 // Get info about one spaceship (surround view and etc)
 func (g *galaxy) getSpaceshipInfo(s *spaceship) *spaceshipInfo {
 	res := s.toInfo(true)
-	viewZone := getAllPointsInCircle(s.Radar)
+	viewZone := getAllPointsInCircle(s.radar)
 
 	for _, v := range viewZone {
-		p := s.Pos.Add(v)
+		p := s.pos.Add(v)
 		zone := g.get(p.X, p.Y)
 
 		if zone != nil {
