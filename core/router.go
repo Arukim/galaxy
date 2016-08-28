@@ -102,7 +102,8 @@ func (r *Router) Listen(conn *websocket.Conn) {
 			}
 
 			r.reply(cmd.Cmd, res)
-			log.Panicf("Unhandled error %v", err.Error())
+			log.Printf("Unhandled error %v", err.Error())
+			continue
 		}
 
 		// log command
