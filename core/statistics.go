@@ -48,6 +48,6 @@ func (s *Statistics) ToInfo() *StatisticsInfo {
 	}
 	d := time.Now().Sub(s.started)
 	i.Uptime = fmt.Sprintf("%02d:%02d:%02d",
-		int(d.Hours()), int(d.Minutes()), int(d.Seconds()))
+		int(d.Hours()), int(d.Minutes())%60, int(d.Seconds())%60)
 	return &i
 }
