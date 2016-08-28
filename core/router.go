@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"sync"
 
 	"golang.org/x/net/websocket"
@@ -84,7 +85,16 @@ func (r *Router) Listen(conn *websocket.Conn) {
 			log.Println("client disconnected")
 			return
 		} else if err != nil {
-			log.Panicf("Unhandled error %v", err)
+			if strings.HasPrefix(err.Error(), "invalid character") {
+				res = &Result{
+					Status: 400,
+					Data:   err.Error(),
+				}
+
+				r.reply(cmd.Cmd, res)
+				continue
+			}
+			log.Panicf("Unhandled error %v", err.Error())
 		}
 
 		// log command
