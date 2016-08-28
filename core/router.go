@@ -72,6 +72,7 @@ func (r *Router) SetHandlers(handlers []*CommandHandler) {
 
 // Listen handles web socket read
 func (r *Router) Listen(conn *websocket.Conn) {
+	GameStats.OnClientConnected()
 	log.Println("client connected")
 	r.conn = conn
 
@@ -83,6 +84,7 @@ func (r *Router) Listen(conn *websocket.Conn) {
 		// check for disconnect
 		if err == io.EOF {
 			log.Println("client disconnected")
+			GameStats.OnClientDisconnected()
 			return
 		} else if err != nil {
 			// handle know errors, e.g. bad json in request

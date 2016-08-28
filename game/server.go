@@ -167,6 +167,8 @@ func (s *Server) Start() {
 			for _, p := range s.Players {
 				p.disconnect()
 			}
+
+			core.GameStats.AddPlayedGame()
 			return
 		}
 	}
