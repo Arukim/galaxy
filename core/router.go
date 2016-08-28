@@ -85,6 +85,7 @@ func (r *Router) Listen(conn *websocket.Conn) {
 			log.Println("client disconnected")
 			return
 		} else if err != nil {
+			// handle know errors, e.g. bad json in request
 			if strings.HasPrefix(err.Error(), "invalid character") {
 				res = &Result{
 					Status: 400,
@@ -94,6 +95,13 @@ func (r *Router) Listen(conn *websocket.Conn) {
 				r.reply(cmd.Cmd, res)
 				continue
 			}
+			// Unknown error gonna crush the socket
+			res = &Result{
+				Status: 500,
+				Data:   err.Error(),
+			}
+
+			r.reply(cmd.Cmd, res)
 			log.Panicf("Unhandled error %v", err.Error())
 		}
 
